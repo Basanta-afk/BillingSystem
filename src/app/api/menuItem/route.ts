@@ -1,34 +1,41 @@
 import { getAuthSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { MenuItemValidator } from "@/lib/validators/menuItem"; // Update the path accordingly
-import { NextApiRequest, NextApiResponse } from "next";
+import { MenuItemValidator } from "@/lib/validators/menuItem";
+import { z } from "zod";
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method Not Allowed" });
-  }
-
-  const session = await getAuthSession(); // Implement the getAuthSession function accordingly
-
-  if (!session) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
+export async function POST(req: Request) {
   try {
-    const menuItemData = MenuItemValidator.parse(req.body);
+    const body = await req.json();
 
-    // Example: Create a new MenuItem
-    const createdMenuItem = await db.menuItem.create({
+    const { name, description, category, price, image } =
+      MenuItemValidator.parse(body);
+
+    const session = await getAuthSession();
+
+    if (!session?.user) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    await db.menuItem.create({
       data: {
-        ...menuItemData,
+        name,
+        description,
+        category,
+        price,
+        image,
       },
     });
 
-    return res.status(200).json(createdMenuItem);
+    return new Response("OK");
   } catch (error) {
-    return res.status(400).json({ message: "Invalid data", error });
+    if (error instanceof z.ZodError) {
+      return new Response(error.message, { status: 400 });
+    }
+
+    return new Response(
+      "Could not post to subreddit at this time. Please try later",
+      { status: 500 }
+    );
   }
 }
+

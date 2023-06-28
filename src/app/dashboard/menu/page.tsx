@@ -5,12 +5,17 @@ import { Input } from "@/components/ui/Input";
 import { toast } from "@/hooks/use-toast";
 import { useCustomToasts } from "@/hooks/use-custom-toasts";
 import { MenuItemValidator } from "@/lib/validators/menuItem";
-import { useMutation } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useMutation,
+} from "@tanstack/react-query";
 import axios, { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { Textarea } from "@/components/ui/Textarea";
 
 type FormData = z.infer<typeof MenuItemValidator>;
 
@@ -33,6 +38,8 @@ const AddMenuItemForm = () => {
     },
   });
 
+  const queryClient = new QueryClient(); // Create a new instance of QueryClient
+
   const { mutate: createMenuItem, isLoading } = useMutation({
     mutationFn: async ({
       name,
@@ -43,7 +50,7 @@ const AddMenuItemForm = () => {
     }: FormData) => {
       const payload: FormData = { name, description, category, price, image };
 
-      const { data } = await axios.post(`/api/menuItem`, payload);
+      const { data } = await axios.post("/api/menuItem", payload);
 
       return data;
     },
@@ -82,39 +89,51 @@ const AddMenuItemForm = () => {
 
         <div>
           <label htmlFor="description">Description</label>
-          <textarea id="description" {...register("description")} />
-          {errors?.name && (
-            <p className="px-1 text-xs text-red-600">{errors.name.message}</p>
+          <Textarea id="description" {...register("description")} />
+          {errors?.description && (
+            <p className="px-1 text-xs text-red-600">
+              {errors.description.message}
+            </p>
           )}
         </div>
 
         <div>
           <label htmlFor="price">Price</label>
-          <Input id="price" {...register("price")} />
-          {errors?.name && (
-            <p className="px-1 text-xs text-red-600">{errors.name.message}</p>
+          <Input type="number" id="price" {...register("price", { valueAsNumber: true })} />
+          {errors?.price && (
+            <p className="px-1 text-xs text-red-600">{errors.price.message}</p>
           )}
         </div>
 
         <div>
-          <label htmlFor="category">Price</label>
+          <label htmlFor="category">Category</label>
           <Input id="category" {...register("category")} />
-          {errors?.name && (
-            <p className="px-1 text-xs text-red-600">{errors.name.message}</p>
+          {errors?.category && (
+            <p className="px-1 text-xs text-red-600">
+              {errors.category.message}
+            </p>
           )}
         </div>
 
         <div>
           <label htmlFor="image">Image URL</label>
           <Input id="image" {...register("image")} />
-          {errors?.name && (
-            <p className="px-1 text-xs text-red-600">{errors.name.message}</p>
+          {errors?.image && (
+            <p className="px-1 text-xs text-red-600">{errors.image.message}</p>
           )}
         </div>
-        <Button isLoading={isLoading}>Change name</Button>
+        <Button isLoading={isLoading}>Add</Button>
       </form>
     </div>
   );
 };
 
-export default AddMenuItemForm;
+// export default AddMenuItemForm;
+
+const AddMenuItemPage = () => (
+  <QueryClientProvider client={new QueryClient()}>
+    <AddMenuItemForm />
+  </QueryClientProvider>
+);
+
+export default AddMenuItemPage;
